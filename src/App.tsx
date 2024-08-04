@@ -16,7 +16,7 @@ import {
   useWalletStore,
   useWallets,
 } from "@roochnetwork/rooch-sdk-kit";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./App.css";
 import { shortAddress } from "./utils";
 
@@ -25,7 +25,6 @@ const counterAddress =
   "0x0cc94c5429368b2dcd7ebfca18b65e891d8ae0fad6371514d42f4c7d6f50d9cf";
 
 function App() {
-  const [myaddress, setMyAddress] = useState(Args.address(""));
   const wallets = useWallets();
   const currentAddress = useCurrentAddress();
   const sessionKey = useCurrentSession();
@@ -34,12 +33,6 @@ function App() {
     (state) => state.setWalletDisconnected
   );
   const { mutateAsync: connectWallet } = useConnectWallet();
-
-  useEffect(() => {
-    if (currentAddress) {
-      setMyAddress(Args.address(currentAddress));
-    }
-  }, [currentAddress]);
 
   const { mutateAsync: createSessionKey } = useCreateSessionKey();
   const { mutateAsync: removeSessionKey } = useRemoveSession();
