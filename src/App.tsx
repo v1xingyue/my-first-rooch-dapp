@@ -4,7 +4,7 @@
 
 import { LoadingButton } from "@mui/lab";
 import { Button, Chip, Divider, Stack, Typography } from "@mui/material";
-import { Transaction } from "@roochnetwork/rooch-sdk";
+import { Args, Transaction } from "@roochnetwork/rooch-sdk";
 import {
   UseSignAndExecuteTransaction,
   useConnectWallet,
@@ -16,14 +16,16 @@ import {
   useWalletStore,
   useWallets,
 } from "@roochnetwork/rooch-sdk-kit";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { shortAddress } from "./utils";
 
 // Publish address of the counter contract
-const counterAddress = "YOUR_COUNTER_ADDRESS";
+const counterAddress =
+  "0x0cc94c5429368b2dcd7ebfca18b65e891d8ae0fad6371514d42f4c7d6f50d9cf";
 
 function App() {
+  const [myaddress, setMyAddress] = useState(Args.address(""));
   const wallets = useWallets();
   const currentAddress = useCurrentAddress();
   const sessionKey = useCurrentSession();
@@ -33,13 +35,30 @@ function App() {
   );
   const { mutateAsync: connectWallet } = useConnectWallet();
 
+  useEffect(() => {
+    if (currentAddress) {
+      setMyAddress(Args.address(currentAddress));
+    }
+  }, [currentAddress]);
+
   const { mutateAsync: createSessionKey } = useCreateSessionKey();
   const { mutateAsync: removeSessionKey } = useRemoveSession();
   const { mutateAsync: signAndExecuteTransaction } =
     UseSignAndExecuteTransaction();
-  const { data, refetch } = useRoochClientQuery("executeViewFunction", {
-    target: `${counterAddress}::quick_start_counter::value`,
-  });
+  const { data, refetch } = useRoochClientQuery(
+    "executeViewFunction",
+    {
+      target: `${counterAddress}::quick_start_counter::value`,
+      args: [
+        currentAddress != null
+          ? Args.address(currentAddress)
+          : Args.address(""),
+      ],
+    },
+    {
+      enabled: currentAddress != null,
+    }
+  );
 
   const [sessionLoading, setSessionLoading] = useState(false);
   const [txnLoading, setTxnLoading] = useState(false);
@@ -212,34 +231,65 @@ function App() {
               {data?.return_values?.[0]?.decoded_value.toString()}
             </span>
           </Typography>
-          <LoadingButton
-            loading={txnLoading}
-            variant="contained"
-            fullWidth
-            disabled={!sessionKey}
-            onClick={async () => {
-              try {
-                setTxnLoading(true);
-                const txn = new Transaction();
-                txn.callFunction({
-                  address: counterAddress,
-                  module: "quick_start_counter",
-                  function: "increase",
-                  args: [],
-                });
-                await signAndExecuteTransaction({ transaction: txn });
-                await refetch();
-              } catch (error) {
-                console.error(String(error));
-              } finally {
-                setTxnLoading(false);
-              }
-            }}
-          >
-            {sessionKey
-              ? "Increase Counter Value"
-              : "Please create Session Key first"}
-          </LoadingButton>
+          {data == null ? (
+            <LoadingButton
+              loading={txnLoading}
+              variant="contained"
+              fullWidth
+              // disabled={!sessionKey}
+              onClick={async () => {
+                console.log("refetching");
+                try {
+                  setTxnLoading(true);
+                  const txn = new Transaction();
+                  txn.callFunction({
+                    address: counterAddress,
+                    module: "quick_start_counter",
+                    function: "mint",
+                    args: [],
+                  });
+                  await signAndExecuteTransaction({ transaction: txn });
+                  await refetch();
+                } catch (error) {
+                  console.error(String(error));
+                } finally {
+                  setTxnLoading(false);
+                }
+              }}
+            >
+              Mint Counter
+            </LoadingButton>
+          ) : (
+            <LoadingButton
+              loading={txnLoading}
+              variant="contained"
+              fullWidth
+              // disabled={!sessionKey}
+              onClick={async () => {
+                console.log("refetching");
+                try {
+                  setTxnLoading(true);
+                  const txn = new Transaction();
+                  txn.callFunction({
+                    address: counterAddress,
+                    module: "quick_start_counter",
+                    function: "increase",
+                    args: [],
+                  });
+                  await signAndExecuteTransaction({ transaction: txn });
+                  await refetch();
+                } catch (error) {
+                  console.error(String(error));
+                } finally {
+                  setTxnLoading(false);
+                }
+              }}
+            >
+              {sessionKey
+                ? "Increase Counter Value"
+                : "Please create Session Key first"}
+            </LoadingButton>
+          )}
         </Stack>
       </Stack>
     </Stack>
