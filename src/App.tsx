@@ -229,7 +229,7 @@ function App() {
               loading={txnLoading}
               variant="contained"
               fullWidth
-              // disabled={!sessionKey}
+              disabled={!sessionKey}
               onClick={async () => {
                 console.log("refetching");
                 try {
